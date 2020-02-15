@@ -1,8 +1,8 @@
 package io.cliffdurden.udemy.kafka_streams.bank_balance.consumer;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import io.cliffdurden.udemy.kafka_streams.bank_balance.api.BankAccount;
 import io.cliffdurden.udemy.kafka_streams.bank_balance.serialization.*;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.serialization.*;
 import org.apache.kafka.streams.*;
 import org.apache.kafka.streams.kstream.*;
@@ -13,6 +13,7 @@ import java.util.Properties;
  * The main purpose of this lesson is to try
  * StreamsConfig.PROCESSING_GUARANTEE_CONFIG, StreamsConfig.EXACTLY_ONCE kafka feature
  */
+@Slf4j
 public class BankAccountConsumer {
 
     private static final String IN_MESSAGES_TOPIC_NAME = "bank-transactions";
@@ -28,8 +29,6 @@ public class BankAccountConsumer {
 
         kafkaProperties.put(StreamsConfig.APPLICATION_ID_CONFIG, "bank-account-consumer");
         kafkaProperties.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
-        kafkaProperties.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass().getName());
-        kafkaProperties.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, BankAccountSerde.class.getName());
 
         StreamsBuilder kafkaStreamBuilder = new StreamsBuilder();
 
@@ -49,10 +48,12 @@ public class BankAccountConsumer {
                 .groupByKey()
                 .aggregate(
                         () -> initialVal,
-                        (key, transaction, balance) -> newBalance(transaction, balance)
+                        (key, transaction, balance) -> newBalance(transaction, balance),
+                        Materialized.with(Serdes.String(), bankAccountSerde)
 
                 )
                 .toStream()
+                .peek((key, value) -> log.info("{}'s bank balance changed: {}", key, value))
                 .to(OUT_MESSAGES_TOPIC_NAME, Produced.with(Serdes.String(), bankAccountSerde));
 
         KafkaStreams kafkaStreams = new KafkaStreams(kafkaStreamBuilder.build(), kafkaProperties);
