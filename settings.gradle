@@ -1,0 +1,5 @@
+rootProject.name = 'bank-balance-exactly-ones'
+include 'produder'
+include 'api'
+include 'consumer'
+
