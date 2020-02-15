@@ -1,28 +1,28 @@
-#Solution for udemy example of course Apache Kafka Series - Kafka Streams for Data Processing
-# Section 8
+# Solution for udemy example of course Apache Kafka Series - Kafka Streams for Data Processing
+Section 8
 
-#Docker
+# Docker
 docker image: https://github.com/confluentinc/cp-docker-images
 
-#Need to add this property to kafka env in docker-compose.yml
+# Need to add this property to kafka env in docker-compose.yml
 ```
 KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1 
 KAFKA_TRANSACTION_STATE_LOG.MIN.ISR: 1
 ```
 
-#Start kafka
+# Start kafka
 ```
 docker-compose up
 ```
 
-#Show topics
+# Show topics
 ```
 docker container exec -it kafka-single-node_kafka_1 kafka-topics \
 --bootstrap-server localhost:9092 \
 --list
 ```
-#Create a new topics
-##Create input topic
+# Create a new topics
+## Create input topic
 ```
 docker container exec -it kafka-single-node_kafka_1 kafka-topics \
 --bootstrap-server localhost:9092 \
@@ -33,7 +33,7 @@ docker container exec -it kafka-single-node_kafka_1 kafka-topics \
 --topic bank-transactions
 ```
 
-##Create output topic
+## Create output topic
 ```
 docker container exec -it kafka-single-node_kafka_1 kafka-topics \
 --bootstrap-server localhost:9092 \
@@ -43,7 +43,7 @@ docker container exec -it kafka-single-node_kafka_1 kafka-topics \
 --topic bank-accounts
 ```
 
-#Read values from input topic
+# Read values from input topic
 ```
 docker container exec -it kafka-single-node_kafka_1 kafka-console-consumer \
 --bootstrap-server localhost:9092 \
@@ -53,7 +53,7 @@ docker container exec -it kafka-single-node_kafka_1 kafka-console-consumer \
 --value-deserializer org.apache.kafka.common.serialization.StringDeserializer
 ```
 
-#Read values from out topic
+# Read values from out topic
 ```
 docker container exec -it kafka-single-node_kafka_1 kafka-console-consumer \
 --bootstrap-server localhost:9092 \
