@@ -35,7 +35,7 @@ public class ProducerApp {
                         try {
                             TimeUnit.SECONDS.sleep(1);
                         } catch (InterruptedException e) {
-                            e.printStackTrace();
+                            log.error("Error while send message", e);
                             Thread.currentThread().interrupt();
                         }
                     });
