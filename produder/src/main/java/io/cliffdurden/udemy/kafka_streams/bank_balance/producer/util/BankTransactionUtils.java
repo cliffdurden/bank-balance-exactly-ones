@@ -1,19 +1,19 @@
 package io.cliffdurden.udemy.kafka_streams.bank_balance.producer.util;
 
-import io.cliffdurden.udemy.kafka_streams.bank_balance.api.BankAccount;
+import io.cliffdurden.udemy.kafka_streams.bank_balance.api.BankTransaction;
 
 import java.util.Random;
 
 import static java.time.LocalDateTime.now;
 
-public class BankAccountUtils {
+public class BankTransactionUtils {
 
-    private BankAccountUtils() {
+    private BankTransactionUtils() {
         throw new UnsupportedOperationException("Utils class");
     }
 
-    public static BankAccount randomBankAccount() {
-        return BankAccount.builder()
+    public static BankTransaction randomBankAccount() {
+        return BankTransaction.builder()
                 .name(randomName())
                 .amount(randomAmount())
                 .time(now())
@@ -21,7 +21,7 @@ public class BankAccountUtils {
     }
 
     private static long randomAmount() {
-        return new Random().nextInt(1000);
+        return new Random().nextInt(1000) - 500L;
     }
 
     private static String randomName() {

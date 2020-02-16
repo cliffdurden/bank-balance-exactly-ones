@@ -12,26 +12,26 @@ import java.time.LocalDateTime;
  * {
  * "name": "John",
  * "amount": 123,
- * "updateTime": "2019-12-15T05:24:30"
+ * "time": "2019-12-15T05:24:30"
  * }
  */
 @Value
 @Builder
-@JsonDeserialize(builder = BankAccount.BankAccountBuilder.class)
-public class BankAccount {
+@JsonDeserialize(builder = BankTransaction.BankTransactionBuilder.class)
+public class BankTransaction {
 
     private final String name;
     private final Long amount;
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "YYYY-MM-dd'T'HH:mm:ss.SSS")
     @JsonDeserialize(using = LocalDateTimeDeserializer.class)
     @JsonSerialize(using = LocalDateTimeSerializer.class)
-    private final LocalDateTime updateTime;
+    private final LocalDateTime time;
 
     @JsonPOJOBuilder(withPrefix = "")
-    public static class BankAccountBuilder {
+    public static class BankTransactionBuilder {
 
         @JsonDeserialize(using = LocalDateTimeDeserializer.class)
         @JsonSerialize(using = LocalDateTimeSerializer.class)
-        private LocalDateTime updateTime;
+        private LocalDateTime time;
     }
 }

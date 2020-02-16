@@ -1,8 +1,9 @@
 package io.cliffdurden.udemy.kafka_streams.bank_balance.consumer;
 
-import io.cliffdurden.udemy.kafka_streams.bank_balance.api.BankAccount;
+import io.cliffdurden.udemy.kafka_streams.bank_balance.api.*;
 import io.cliffdurden.udemy.kafka_streams.bank_balance.serialization.*;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.*;
 import org.apache.kafka.streams.*;
 import org.apache.kafka.streams.kstream.*;
@@ -26,19 +27,46 @@ public class BankAccountConsumer {
         //  ERROR [KafkaApi-1] Number of alive brokers '1' does not meet the required replication factor '3' for the transactions state topic (configured via 'transaction.state.log.replication.factor'). This error can be ignored if the cluster is starting up and not all brokers are up yet. (kafka.server.KafkaApis)
         //  Note that "exactly_once" processing requires a cluster of at least three brokers by default, which is the recommended setting for production.
         kafkaProperties.put(StreamsConfig.PROCESSING_GUARANTEE_CONFIG, StreamsConfig.EXACTLY_ONCE);
-
+        kafkaProperties.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest");
         kafkaProperties.put(StreamsConfig.APPLICATION_ID_CONFIG, "bank-account-consumer");
         kafkaProperties.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
 
+        BankAccountConsumer consumer = new BankAccountConsumer();
+        try (KafkaStreams kafkaStreams = new KafkaStreams(consumer.createTopology(), kafkaProperties)) {
+            //Do a clean up of the local StateStore directory (StreamsConfig.STATE_DIR_CONFIG) by deleting all data with regard to the application ID
+            kafkaStreams.cleanUp(); // DO NOT DO THIS IN PROD
+            kafkaStreams.start();
+
+            Runtime.getRuntime().addShutdownHook(new Thread(kafkaStreams::close));
+        }
+    }
+
+    private static BankTransaction aggregate(BankTransaction transaction, BankTransaction balance) {
+        return BankTransaction.builder()
+                .time(transaction.getTime())
+                .amount(balance.getAmount() + transaction.getAmount())
+                .name(transaction.getName())
+                .build();
+    }
+
+    private static BankAccount mapAccount(BankTransaction aggregatedTransaction) {
+        return BankAccount.builder()
+                .updateTime(aggregatedTransaction.getTime())
+                .amount(aggregatedTransaction.getAmount())
+                .name(aggregatedTransaction.getName())
+                .build();
+    }
+
+    public Topology createTopology() {
         StreamsBuilder kafkaStreamBuilder = new StreamsBuilder();
 
+        final Serde<BankTransaction> bankTransactionSerde = Serdes.serdeFrom(new BankTransactionSerializer(), new BankTransactionDeserializer());
         final Serde<BankAccount> bankAccountSerde = Serdes.serdeFrom(new BankAccountSerializer(), new BankAccountDeserializer());
 
+        KStream<String, BankTransaction> kStreamBankTransactions = kafkaStreamBuilder
+                .stream(IN_MESSAGES_TOPIC_NAME, Consumed.with(Serdes.String(), bankTransactionSerde));
 
-        KStream<String, BankAccount> kStreamBankTransactions = kafkaStreamBuilder
-                .stream(IN_MESSAGES_TOPIC_NAME, Consumed.with(Serdes.String(), bankAccountSerde));
-
-        BankAccount initialVal = BankAccount.builder()
+        BankTransaction initialVal = BankTransaction.builder()
                 .amount(0L)
                 .name(null)
                 .time(null)
@@ -48,28 +76,15 @@ public class BankAccountConsumer {
                 .groupByKey()
                 .aggregate(
                         () -> initialVal,
-                        (key, transaction, balance) -> newBalance(transaction, balance),
-                        Materialized.with(Serdes.String(), bankAccountSerde)
+                        (key, transaction, aggregatedTransaction) -> aggregate(transaction, aggregatedTransaction),
+                        Materialized.with(Serdes.String(), bankTransactionSerde)
 
                 )
+                .mapValues(BankAccountConsumer::mapAccount)
                 .toStream()
                 .peek((key, value) -> log.info("{}'s bank balance changed: {}", key, value))
                 .to(OUT_MESSAGES_TOPIC_NAME, Produced.with(Serdes.String(), bankAccountSerde));
-
-        KafkaStreams kafkaStreams = new KafkaStreams(kafkaStreamBuilder.build(), kafkaProperties);
-        //Do a clean up of the local StateStore directory (StreamsConfig.STATE_DIR_CONFIG) by deleting all data with regard to the application ID
-        kafkaStreams.cleanUp(); // DO NOT DO THIS IN PROD
-        kafkaStreams.start();
-
-        Runtime.getRuntime().addShutdownHook(new Thread(kafkaStreams::close));
-    }
-
-    private static BankAccount newBalance(BankAccount transaction, BankAccount balance) {
-        return BankAccount.builder()
-                .time(transaction.getTime())
-                .amount(balance.getAmount() + transaction.getAmount())
-                .name(transaction.getName())
-                .build();
+        return kafkaStreamBuilder.build();
     }
 
 }
