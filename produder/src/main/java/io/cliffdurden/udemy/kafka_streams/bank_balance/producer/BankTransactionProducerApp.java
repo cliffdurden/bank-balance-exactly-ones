@@ -13,7 +13,7 @@ import java.util.stream.*;
 import static io.cliffdurden.udemy.kafka_streams.bank_balance.producer.util.BankTransactionUtils.randomBankAccount;
 
 @Slf4j
-public class ProducerApp {
+public class BankTransactionProducerApp {
 
     private static final String TOPIC_NAME = "bank-transactions";
     private static final int MAX_MESSAGES_COUNT = 1_000_000;

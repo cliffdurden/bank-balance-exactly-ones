@@ -15,7 +15,7 @@ import java.util.Properties;
  * StreamsConfig.PROCESSING_GUARANTEE_CONFIG, StreamsConfig.EXACTLY_ONCE kafka feature
  */
 @Slf4j
-public class BankAccountConsumer {
+public class BankTransactionConsumerApp {
 
     private static final String IN_MESSAGES_TOPIC_NAME = "bank-transactions";
     private static final String OUT_MESSAGES_TOPIC_NAME = "bank-accounts";
@@ -31,7 +31,7 @@ public class BankAccountConsumer {
         kafkaProperties.put(StreamsConfig.APPLICATION_ID_CONFIG, "bank-account-consumer");
         kafkaProperties.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
 
-        BankAccountConsumer consumer = new BankAccountConsumer();
+        BankTransactionConsumerApp consumer = new BankTransactionConsumerApp();
         try (KafkaStreams kafkaStreams = new KafkaStreams(consumer.createTopology(), kafkaProperties)) {
             //Do a clean up of the local StateStore directory (StreamsConfig.STATE_DIR_CONFIG) by deleting all data with regard to the application ID
             kafkaStreams.cleanUp(); // DO NOT DO THIS IN PROD
@@ -80,7 +80,7 @@ public class BankAccountConsumer {
                         Materialized.with(Serdes.String(), bankTransactionSerde)
 
                 )
-                .mapValues(BankAccountConsumer::mapAccount)
+                .mapValues(BankTransactionConsumerApp::mapAccount)
                 .toStream()
                 .peek((key, value) -> log.info("{}'s bank balance changed: {}", key, value))
                 .to(OUT_MESSAGES_TOPIC_NAME, Produced.with(Serdes.String(), bankAccountSerde));
