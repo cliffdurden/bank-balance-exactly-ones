@@ -57,7 +57,7 @@ public class BankAccountConsumer {
                 .to(OUT_MESSAGES_TOPIC_NAME, Produced.with(Serdes.String(), bankAccountSerde));
 
         KafkaStreams kafkaStreams = new KafkaStreams(kafkaStreamBuilder.build(), kafkaProperties);
-
+        //Do a clean up of the local StateStore directory (StreamsConfig.STATE_DIR_CONFIG) by deleting all data with regard to the application ID
         kafkaStreams.cleanUp(); // DO NOT DO THIS IN PROD
         kafkaStreams.start();
 
